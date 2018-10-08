@@ -1,0 +1,18 @@
+---
+title: "Chronic Diseases and Their Relationship with Unhealthy Behaviors and Preventive Measures"
+author: "Jeremy James, Ali Mohamud, and Ben Donovan"
+date: "Due on Oct 24, 2018"
+output: pdf_document
+---
+
+##Abstract
+Chronic diseases affect millions of Americans every day. They have no cure, nor do they go away with time. In this project, we analyze measures of chronic diseases, including unhealthy behaviors, health outcomes, and use of preventive services of 500 major cities in the United States. Through comparing different communities based on this data, we find which communities thrive or suffer, and report what factors play a role in their respective outcomes. To visualize this information, we use map plots to show the location of healthy or unhealthy cities, and scatter plots to show correlation between different measures and chronic diseases. We do not know any specific challenges we will face, nor do we know of any correlations between specific unhealthy behaviors or preventative services and chronic diseases. Potential future research could include investigating additional data sets for weather or socioeconomic factors to find more factors that play a role in increased rates of chronic diseases.  This analysis will allow public health officials to allocate their limited resources based on the needs of each community, to better improve the well-being of the residents. 
+
+
+```{r}
+library(reshape2)
+crdData <- origCityData[origCityData$DataValueTypeID=="CrdPrv",]
+adjData <- origCityData[origCityData$DataValueTypeID=="AgeAdjPrv",]
+```
+
+
