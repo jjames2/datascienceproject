@@ -1,18 +1,140 @@
 ---
 title: "Chronic Diseases and Their Relationship with Unhealthy Behaviors and Preventive Measures"
 author: "Jeremy James, Ali Mohamud, and Ben Donovan"
-date: "Due on Oct 24, 2018"
+date: "Due on Oct 22, 2018"
 output: pdf_document
+number_sections: TRUE
+fig_caption: yes
 ---
 
 ##Abstract
 Chronic diseases affect millions of Americans every day. They have no cure, nor do they go away with time. In this project, we analyze measures of chronic diseases, including unhealthy behaviors, health outcomes, and use of preventive services of 500 major cities in the United States. Through comparing different communities based on this data, we find which communities thrive or suffer, and report what factors play a role in their respective outcomes. To visualize this information, we use map plots to show the location of healthy or unhealthy cities, and scatter plots to show correlation between different measures and chronic diseases. We do not know any specific challenges we will face, nor do we know of any correlations between specific unhealthy behaviors or preventative services and chronic diseases. Potential future research could include investigating additional data sets for weather or socioeconomic factors to find more factors that play a role in increased rates of chronic diseases.  This analysis will allow public health officials to allocate their limited resources based on the needs of each community, to better improve the well-being of the residents. 
 
+#1  Introduction
 
-```{r}
-library(reshape2)
-crdData <- origCityData[origCityData$DataValueTypeID=="CrdPrv",]
-adjData <- origCityData[origCityData$DataValueTypeID=="AgeAdjPrv",]
+Medicinenet.com gives the medical definition of chronic disease as "A disease that persists for a long time [(3 months +)]." They are generally not prevented by vaccines nor go away with medication or time[https://www.medicinenet.com/script/main/art.asp?articlekey=33490]. Table 1 displays the chronic diseases tracked in our data set. The different kinds of chronic diseases are measured by percentage of population affected on the national, city, and census track level. 
+
+```{r, echo=FALSE}
+origCityData <- read.csv("C:\\Work\\DataScience\\500_Cities__Local_Data_for_Better_Health__2017_release.csv")
+chronicMeasures <- data.frame(condition=unique(origCityData[origCityData$Category == "Health Outcomes",]$Short_Question_Text), measure=unique(origCityData[origCityData$Category == "Health Outcomes",]$Measure))
+names(chronicMeasures) <- c("Chronic Disease", "Data Set Measures")
+
+library(pander)
+panderOptions('table.alignment.default','left')
+pander(chronicMeasures, caption="Conditions and description of measure")
 ```
 
+Unhealthy behaviors can lead to the development of chronic diseases. Table 2 displays the unhealthy behaviors tracked in our data set, measured by percentage of population affected on the national, city, and census track level.
+
+```{r, echo=FALSE}
+behaviorMeasures <- data.frame(behavior=unique(origCityData[origCityData$Category == "Unhealthy Behaviors",]$Short_Question_Text), measure=unique(origCityData[origCityData$Category == "Unhealthy Behaviors",]$Measure))
+names(behaviorMeasures) <- c("Unhealthy Behavior", "Data Set Measures")
+
+pander(behaviorMeasures, caption="Unhealthy behaviors and description of measure")
+```
+
+Though chronic diseases have no cure, they can be prevented. Table 3 displays the preventive services tracked in our data set, measured by percentage of population affected on the national, city, and census track level.
+
+```{r, echo=FALSE}
+preventionMeasures <- data.frame(prevention=unique(origCityData[origCityData$Category == "Prevention",]$Short_Question_Text), measure=unique(origCityData[origCityData$Category == "Prevention",]$Measure))
+preventionMeasures$measure <- iconv(gsub("-","-", preventionMeasures$measure), from='UTF-8', to='ASCII//TRANSLIT')
+names(preventionMeasures) <- c("Preventive Service", "Data Set Measures")
+
+pander(preventionMeasures, caption="Preventive service and description of measure")
+```
+The rest of the report will discuss the '500 Cities: Local Data for Better Health' dataset. We will relate what we did to prepare the data for analyses, and display the data products we created from it. We will then make conclusions on what we found. 
+
+#2  Description of the data. 
+
+The data that we have used in this project is the'500 Cities: Local Data for Better Health' data obtained from the CDC's '500 Cities project' [https://catalog.data.gov/dataset/500-cities-local-data-for-better-health-b32fd]. This is a publicaly available data set that includes a model-based small area estimates for 27 measures of chronic disease related to unhealthy behaviors (5), heath outcomes (13) and use of preventive services (9) for 500 cities throughout the United States. The primary aim of the data is to make it possible to identify emerging health problems and effective interventions at city level. 
+
+#2.1  Preparing the Data. 
+
+The data was read from the above link into R using the read.csv function. This data set for this project did not require data manupulation. However, All the columns of the data set were not necessary for the analysis. Therefore, we subsetted by selecting only the column that were relevant for the analysis. Here are the columns we will use:
+```{r, echo=FALSE}
+data <- subset(origCityData, select = c("UniqueID", "CityName","StateAbbr", "GeoLocation", "Year","Measure","Data_Value","PopulationCount","GeographicLevel", "Short_Question_Text", "Category", "DataValueTypeID"))
+pander(names(data))
+```
+
+#3 Data Exploration
+
+This section is incomplete. We will be doing more exploration of this dataset as the semester progresses.
+
+##3.1 Mapping Chronic Disease levels
+
+```{r, echo=FALSE}
+library(maps)
+library(tidyr)
+library(ggplot2)
+mapdata <- data[data$GeographicLevel == "City" & data$DataValueTypeID == "AgeAdjPrv" & data$Category == "Health Outcomes",]
+mapdata$GeoLocation <- gsub("[ ()]", "", mapdata$GeoLocation)
+mapdata <- mapdata %>% separate(GeoLocation, c("lat", "long"), ",")
+mapdata$lat <- as.numeric(mapdata$lat)
+mapdata$long <- as.numeric(mapdata$long)
+USA <- map_data("state")
+
+ggplot() + geom_polygon(aes(long,lat, group=group), color='white', fill="grey65", data=USA) + geom_point(data=mapdata[mapdata$Short_Question_Text == "Arthritis",], aes(long,lat,color=Data_Value))
+```
+shiny dashboard?
+usmap
+##3.2 Comparison of large and small cities
+
+This plot visualizes the distribution of percentages of chronic disease in large and small cities, where large cities have populations greater than 100,000. 
+
+```{r, fig.height=3, fig.width=4, fig.cap="\\label{fig:figs}Comparison of chronic disease rates in big and small cities", echo=FALSE}
+ageadjcitydat <- data[data$GeographicLevel=="City" & data$DataValueTypeID=="AgeAdjPrv",]
+v1=na.omit(data.frame(ageadjcitydat$Data_Value,ageadjcitydat$PopulationCount))
+
+# Separation of cities into two groups - large and small
+v11=ifelse(v1$ageadjcitydat.PopulationCount>100000,"Large","Small")
+ggplot(v1, aes(x=v11, y=v1$ageadjcitydat.Data_Value,
+fill=v11)) + geom_boxplot()+labs(x = "City", y = "Percentage of chronic diseases")+
+  theme(legend.position="none")
+```
+
+##3.3 Unhealthy Behaviours and Health Outcomes
+
+In this section, we will explore the relationship between unhealthy behaviors and chronic diseases. 
+
+```{r, fig.width=10, fig.height=10, fig.align='center',out.width='.99\\linewidth'}
+library(reshape2)
+library(corrplot)
+correlation_matrix_data <- dcast(data[data$GeographicLevel=="Census Tract",], UniqueID+PopulationCount~Short_Question_Text, value.var="Data_Value")
+row.names(correlation_matrix_data) <- correlation_matrix_data$UniqueID
+correlation_matrix_data$UniqueID <- NULL
+correlation_matrix_data <- correlation_matrix_data[complete.cases(correlation_matrix_data),]
+correlation_matrix <- cor(correlation_matrix_data)
+correlation_matrix <- round(correlation_matrix, 2)
+corrplot(correlation_matrix, title = "Correlation Plot", insig = "pch", addrect = 3)
+```
+
+###3.3.1 Smoking and asthma
+Look at air quality data
+Asthma risk factor American lung association
+Finding how different factors effect asthma rates in different census tracts
+Find similar projects ncbi
+```{r}
+tractdata <- dcast(data[data$GeographicLevel=="Census Tract" & data$DataValueTypeID=="AgeAdjPrv",], UniqueID+CityName+StateAbbr+GeoLocation+Year+PopulationCount+GeographicLevel~Short_Question_Text, value.var="Data_Value")
+ggplot(tractdata, aes(x=`Current Smoking`,y=`Current Asthma`)) + geom_point() + geom_smooth(method='lm')
+```
+
+##3.4 Preventive Measures and Health Outcomes
+
+In this section, we will explore the relationship between preventive measures and chronic diseases.
+
+#4  Findings
+
+This section is still in progress. It will contain our interpretations of the data we have analyzed. 
+
+##4.1 Comparison of large and small cities
+
+As we saw from a boxplot, population has little to no affect on overal chronic disease rates. We can also confirm this by using a t-test with the hypothesis $H_0:\mu_L-\mu_S=0$ versus the hypothesis $H_a:\mu_L-\mu_S\neq0$. Here $\mu_L$ is a mean percentage of chronic diseases in the large cities (count of peoples is more than 100000) and$\mu_L$ is a mean percentage of chronic diseases in the small cities (count of peoples is less or equal to 100000). 
+```{r, echo=FALSE}
+pander(t.test(v1$ageadjcitydat.Data_Value~v11))
+```
+Since the p-value is greater than significance level $\alpha=0.05$ then we no reject a null hypothsis $H_0$ and we conclude that no significance difference of the mean percentage of chronic diseases in the large and small cities.
+In the future, we will look at each chronic disease individually to see if any specific disease is correlated with population.
+
+#5  Conclusion
+We have no conclusions to report yet, other than that city population has little to do with city health outcomes. In our final report, this section will have more details on our findings.
 
