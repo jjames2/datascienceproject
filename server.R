@@ -15,6 +15,7 @@ shinyServer(function(input, output) {
   # convert the temp DF from long format to wide format. 
   tmp2 <- dcast(tmp, CityFIPS ~ Short_Question_Text, value.var = "Data_Value", median)
   
+  cityHealthOutcomes <- origCityData[origCityData$Category == "Health Outcomes" & origCityData$StateAbbr != "US" & origCityData$GeographicLevel=="City" & origCityData$DataValueTypeID == "AgeAdjPrv",]
   #perform a left join to return the rest of the needed data, this creates duplicate records. The unique() function remove duplicate records.
   HealthOutcomesFinal <- unique(left_join(tmp2, data.frame("CityFIPS" = cityHealthOutcomes$CityFIPS, "StateDesc" = cityHealthOutcomes$StateDesc, "CityName" = cityHealthOutcomes$CityName, "Category" = cityHealthOutcomes$Category, "DataSource" = cityHealthOutcomes$DataSource, "PopulationCount" = cityHealthOutcomes$PopulationCount, "Geolocation" = cityHealthOutcomes$GeoLocation)))
   
@@ -31,6 +32,7 @@ shinyServer(function(input, output) {
                 choices = unique(mapdata$Short_Question_Text), 
                 selected = "Arthritis")
   })
+  
   output$mapPlot <- renderPlot({
     disease_map(input$select, mapdata)
   })

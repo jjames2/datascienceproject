@@ -114,8 +114,8 @@ Asthma risk factor American lung association
 Finding how different factors effect asthma rates in different census tracts
 Find similar projects ncbi
 ```{r}
-tractdata <- dcast(data[data$GeographicLevel=="Census Tract" & data$DataValueTypeID=="AgeAdjPrv",], UniqueID+CityName+StateAbbr+GeoLocation+Year+PopulationCount+GeographicLevel~Short_Question_Text, value.var="Data_Value")
-ggplot(tractdata, aes(x=`Current Smoking`,y=`Current Asthma`)) + geom_point() + geom_smooth(method='lm')
+tractdata <- dcast(data[data$GeographicLevel=="Census Tract" & data$DataValueTypeID=="CrdPrv",], UniqueID+CityName+StateAbbr+GeoLocation+Year+PopulationCount+GeographicLevel~Short_Question_Text, value.var="Data_Value")
+ggplot(tractdata[!is.na(tractdata$`Current Asthma`) & !is.na(tractdata$`Current Smoking`),], aes(x=`Current Smoking`,y=`Current Asthma`)) + geom_point() + geom_smooth(method='lm')
 ```
 
 ##3.4 Preventive Measures and Health Outcomes

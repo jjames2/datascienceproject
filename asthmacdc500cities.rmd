@@ -1,0 +1,94 @@
+---
+title: "Risk factors for Asthma at the Community Level"
+author: "James Jeremy"
+date: "December 3, 2018"
+output: pdf_document
+---
+
+##Abstract
+
+Asthma is a chronic lung disease that inhibits the ability to move air in and out of the lung. According to the American Lung Association, asthma affects over 26 million people accross the United States. The association identifies 7 risk factors that contribute to developing asthma: Family history, Viral respitory infections, Allergies, Occupational exposures, Smoking, Air Pollution, and Obesity. In this project, I will looking at the asthma rates reported in the CDC's "500 Cities: Local Data for Better Health"" dataset, and seeing its relationship with a few of the risk factors identified by the American Lung Association, including Smoking, Air Pollution, and Obesity. Air Pollution data will be retrieved from the CDC's "Air Quality Measures on the National Environmental Health Tracking Network". Potential future research includes finding relationships between asthma and the other risk factors and looking at childhood asthma rates at the city or census tract level. A challenge to doing this analysis is a lack of data for these factors at a local level. 
+
+# Introduction
+
+The National Heart, Lung, and Blood Institute defines asthma as "a chronic lung disease that inflames and narrows the airways." 26 million people across the United States suffer from wheezing, chest tightness, shortness of breath and coughing caused by the disease. The American Lung Association(ALA) has identified 7 risk factors that contribute to developing asthma: Family history, Viral respitory infections, Allergies, Occupational exposures, Smoking, Air Pollution, and Obesity. The association has found that the most common causes of asthma are having a parent with the disease, having a sever respiratory infection as a child, having an allergic condition, or being exposed to workplace chemical irritants or industrial dusts.
+
+The CDC's "500 Cities: Local Data for Better Health" dataset includes 2013-14 model-based estimates small area estimates for 27 measures of chronic disease related to unhealthy behaviors, health outcomes, and use of preventive services. The data tracks health information for the adult population in these areas, hence the CDC bases its rate of asthma on the percentage of adults older than 18 that suffer from the condition. This means the analysis will not include the commonly discussed problem of childhood asthma. 
+
+I will focus my analysis on the relationship between smoking, obesity, and pollutions rates and asthma rates at the local area level. Currently, I have not found satisfactory datasets for family history, viral respitory infections, and allergies, but I hope to complete research on these in the future.
+
+# Visualizing Asthma Rates accross the Country
+
+Millions accross the United States suffer from asthma, but some geographic areas, such as the northeast and midwest, have higher rates than others.
+
+```{r, echo=FALSE, message=FALSE}
+origCityData <- read.csv("C:\\Work\\DataScience\\500_Cities__Local_Data_for_Better_Health__2017_release.csv")
+data <- subset(origCityData, select = c("UniqueID", "CityName", "CityFIPS", "TractFIPS", "StateAbbr", "GeoLocation", "Year","Measure","Data_Value","PopulationCount","GeographicLevel", "Short_Question_Text", "Category", "DataValueTypeID", "DataSource"))
+library(tidyr)
+library(reshape2)
+library(dplyr)
+mapdata <- data[data$GeographicLevel == "City" & data$DataValueTypeID == "AgeAdjPrv" & data$Category == "Health Outcomes" & !(data$StateAbbr %in% c("AK","HI")),]
+#make a temp data frame of the CityFips, Short_Question_Text, and Data Value
+tmp <- data.frame("CityFIPS" = mapdata$CityFIPS, "Short_Question_Text" = mapdata$Short_Question_Text, "Data_Value" = mapdata$Data_Value)
+
+# convert the temp DF from long format to wide format. 
+tmp2 <- dcast(tmp, CityFIPS ~ Short_Question_Text, value.var = "Data_Value", median)
+
+cityHealthOutcomes <- origCityData[origCityData$Category == "Health Outcomes" & origCityData$StateAbbr != "US" & origCityData$GeographicLevel=="City" & origCityData$DataValueTypeID == "AgeAdjPrv",]
+
+
+#perform a left join to return the rest of the needed data, this creates duplicate records. The unique() function remove duplicate records.
+HealthOutcomesFinal <- unique(left_join(tmp2, data.frame("CityFIPS" = cityHealthOutcomes$CityFIPS, "StateDesc" = cityHealthOutcomes$StateDesc, "CityName" = cityHealthOutcomes$CityName, "Category" = cityHealthOutcomes$Category, "DataSource" = cityHealthOutcomes$DataSource, "PopulationCount" = cityHealthOutcomes$PopulationCount, "Geolocation" = cityHealthOutcomes$GeoLocation)))
+
+#cleanup tmp variables
+rm(tmp, tmp2)
+
+mapdata$GeoLocation <- gsub("[ ()]", "", mapdata$GeoLocation)
+mapdata <- mapdata %>% separate(GeoLocation, c("lat", "long"), ",")
+mapdata$lat <- as.numeric(mapdata$lat)
+mapdata$long <- as.numeric(mapdata$long)
+
+library(maps)
+library(ggplot2)
+USA <- map_data("state")
+usa <- USA[!(USA$region %in% c("alaska","hawaii")),]
+plot <- ggplot() + geom_polygon(aes(long,lat, group=group), color='white', fill="grey65", data=USA) + geom_point(data=mapdata[mapdata$Short_Question_Text == "Current Asthma",], aes(long,lat,color=Data_Value))
+plot
+```
+
+The map above displays the locations of the cities in the study, colored by their respective asthma rates
+
+```{r, echo=FALSE}
+a <- aggregate(HealthOutcomesFinal[["Current Asthma"]] ~ HealthOutcomesFinal$StateDesc, FUN = mean)
+plot <- ggplot(a, aes(reorder(a[,1], -a[,2]), a[,2])) + geom_bar(stat = "identity") + 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1)) + 
+  labs(title="Rate of the disease by State", x="State", y="Percent of Population")
+plot
+```
+Urban areas in northeast states such as have some of the highest asthma rates in the country.
+
+# Asthma and Smoking
+
+According the ALA, cigarette smoke irritates the airways. Smokers have a high risk of asthma, as well as those who inhale the smoke secondhand. Therefore, we should expect to find that communities with higher smoking rates would also have higher asthma rates.
+
+```{r, echo=FALSE}
+tractdata <- dcast(data[data$GeographicLevel=="Census Tract" & data$DataValueTypeID=="CrdPrv",], UniqueID+CityName+TractFIPS+StateAbbr+GeoLocation+Year+PopulationCount+GeographicLevel~Short_Question_Text, value.var="Data_Value")
+ggplot(tractdata[!is.na(tractdata$`Current Asthma`) & !is.na(tractdata$`Current Smoking`),], aes(x=`Current Smoking`,y=`Current Asthma`)) + geom_point() + geom_smooth(method='lm')
+```
+
+# Asthma and Obesity
+
+The ALA has found that though obesity is associated with asthma, it is unclear why. Some believe it is due to inflammation in the body that occur with extra weight. At the census tract level, asthma is clearly associated with obesity. 
+
+```{r, echo=FALSE}
+ggplot(tractdata[!is.na(tractdata$`Current Asthma`) & !is.na(tractdata$Obesity),], aes(x=Obesity,y=`Current Asthma`)) + geom_point() + geom_smooth(method='lm')
+```
+
+
+# Asthma and Air Pollution
+
+The ALA identifies exposure to ozone. as a risk for asthma. This molecule is the main component of smog. The CDC's "Daily Census Tract-Level Ozone Concentrations, 2011-2014" dataset provides predictions of ozone levels from EPA's Downscaler model at the census-tract level. The 500 cities and ozone datasets collaborate the relationship between ozone and asthma. 
+
+```{r}
+ozoneData <- read.csv("C:\\Work\\DataScience\\Air_Quality_Measures_on_the_National_Environmental_Health_Tracking_Network.csv")
+```
