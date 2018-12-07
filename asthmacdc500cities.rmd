@@ -1,5 +1,5 @@
 ---
-title: "Risk factors for Asthma at the Community Level"
+title: "Asthma Risk factors at the Community Level"
 author: "James Jeremy"
 date: "December 3, 2018"
 output: pdf_document
@@ -22,8 +22,10 @@ I will focus my analysis on the relationship between smoking, obesity, and pollu
 Millions accross the United States suffer from asthma, but some geographic areas, such as the northeast and midwest, have higher rates than others.
 
 ```{r, echo=FALSE, message=FALSE}
-origCityData <- read.csv("C:\\Work\\DataScience\\500_Cities__Local_Data_for_Better_Health__2017_release.csv")
-data <- subset(origCityData, select = c("UniqueID", "CityName", "CityFIPS", "TractFIPS", "StateAbbr", "GeoLocation", "Year","Measure","Data_Value","PopulationCount","GeographicLevel", "Short_Question_Text", "Category", "DataValueTypeID", "DataSource"))
+origCityData <- read.csv("C:\\Work\\DataScience\\500_Cities__Local_Data_for_Better_Health__2018_release.csv")
+data <- subset(origCityData, select = c("UniqueID", "CityName", "CityFIPS", "StateAbbr", "GeoLocation", "Year","Measure","Data_Value","PopulationCount","GeographicLevel", "Short_Question_Text", "Category", "DataValueTypeID", "DataSource"))
+data <- data[data$Short_Question_Text %in% c("Current Asthma", "Current Smoking", "Obesity"),]
+
 library(tidyr)
 library(reshape2)
 library(dplyr)
@@ -51,7 +53,6 @@ mapdata$long <- as.numeric(mapdata$long)
 library(maps)
 library(ggplot2)
 USA <- map_data("state")
-usa <- USA[!(USA$region %in% c("alaska","hawaii")),]
 plot <- ggplot() + geom_polygon(aes(long,lat, group=group), color='white', fill="grey65", data=USA) + geom_point(data=mapdata[mapdata$Short_Question_Text == "Current Asthma",], aes(long,lat,color=Data_Value))
 plot
 ```
@@ -62,7 +63,7 @@ The map above displays the locations of the cities in the study, colored by thei
 a <- aggregate(HealthOutcomesFinal[["Current Asthma"]] ~ HealthOutcomesFinal$StateDesc, FUN = mean)
 plot <- ggplot(a, aes(reorder(a[,1], -a[,2]), a[,2])) + geom_bar(stat = "identity") + 
   theme(axis.text.x = element_text(angle = 60, hjust = 1)) + 
-  labs(title="Rate of the disease by State", x="State", y="Percent of Population")
+  labs(title="Average Rate of Asthma in Cities by State", x="State", y="Percent of Population")
 plot
 ```
 Urban areas in northeast states such as have some of the highest asthma rates in the country.
@@ -72,7 +73,7 @@ Urban areas in northeast states such as have some of the highest asthma rates in
 According the ALA, cigarette smoke irritates the airways. Smokers have a high risk of asthma, as well as those who inhale the smoke secondhand. Therefore, we should expect to find that communities with higher smoking rates would also have higher asthma rates.
 
 ```{r, echo=FALSE}
-tractdata <- dcast(data[data$GeographicLevel=="Census Tract" & data$DataValueTypeID=="CrdPrv",], UniqueID+CityName+TractFIPS+StateAbbr+GeoLocation+Year+PopulationCount+GeographicLevel~Short_Question_Text, value.var="Data_Value")
+tractdata <- dcast(data[data$GeographicLevel=="Census Tract" & data$DataValueTypeID=="CrdPrv",], UniqueID+CityName+StateAbbr+GeoLocation+Year+PopulationCount+GeographicLevel~Short_Question_Text, value.var="Data_Value")
 ggplot(tractdata[!is.na(tractdata$`Current Asthma`) & !is.na(tractdata$`Current Smoking`),], aes(x=`Current Smoking`,y=`Current Asthma`)) + geom_point() + geom_smooth(method='lm')
 ```
 
@@ -90,5 +91,13 @@ ggplot(tractdata[!is.na(tractdata$`Current Asthma`) & !is.na(tractdata$Obesity),
 The ALA identifies exposure to ozone. as a risk for asthma. This molecule is the main component of smog. The CDC's "Daily Census Tract-Level Ozone Concentrations, 2011-2014" dataset provides predictions of ozone levels from EPA's Downscaler model at the census-tract level. The 500 cities and ozone datasets collaborate the relationship between ozone and asthma. 
 
 ```{r}
+tractdata$CountyFips <- as.integer(substr(tractdata$UniqueID, 1, 5))
+tractdata$AsthmaPopulation <- tractdata$`Current Asthma`/100 * tractdata$PopulationCount
+countyasthmadata <- aggregate(cbind(AsthmaPopulation,PopulationCount)~CountyFips, tractdata, sum)
+countyasthmadata$`County Asthma Rate` <- countyasthmadata$AsthmaPopulation/countyasthmadata$PopulationCount
+
 ozoneData <- read.csv("C:\\Work\\DataScience\\Air_Quality_Measures_on_the_National_Environmental_Health_Tracking_Network.csv")
+ozoneData <- ozoneData[ozoneData$MeasureId==292 & ozoneData$ReportYear==2011,]
+combined <- merge(x=countyasthmadata, y=ozoneData, by = "CountyFips")
+ggplot(combined[!is.na(combined$`County Asthma Rate`) & !is.na(combined$Value),], aes(x=Value,y=`County Asthma Rate`)) + geom_point() + geom_smooth(method='lm')
 ```

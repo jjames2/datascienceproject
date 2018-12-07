@@ -15,7 +15,7 @@ Chronic diseases affect millions of Americans every day. They have no cure, nor 
 Medicinenet.com gives the medical definition of chronic disease as "A disease that persists for a long time [(3 months +)]." They are generally not prevented by vaccines nor go away with medication or time[https://www.medicinenet.com/script/main/art.asp?articlekey=33490]. Table 1 displays the chronic diseases tracked in our data set. The different kinds of chronic diseases are measured by percentage of population affected on the national, city, and census track level. 
 
 ```{r, echo=FALSE}
-origCityData <- read.csv("C:\\Work\\DataScience\\500_Cities__Local_Data_for_Better_Health__2017_release.csv")
+origCityData <- read.csv("C:\\Work\\DataScience\\500_Cities__Local_Data_for_Better_Health__2018_release.csv")
 chronicMeasures <- data.frame(condition=unique(origCityData[origCityData$Category == "Health Outcomes",]$Short_Question_Text), measure=unique(origCityData[origCityData$Category == "Health Outcomes",]$Measure))
 names(chronicMeasures) <- c("Chronic Disease", "Data Set Measures")
 
@@ -66,17 +66,16 @@ This section is incomplete. We will be doing more exploration of this dataset as
 library(maps)
 library(tidyr)
 library(ggplot2)
-mapdata <- data[data$GeographicLevel == "City" & data$DataValueTypeID == "AgeAdjPrv" & data$Category == "Health Outcomes",]
+mapdata <- data[data$GeographicLevel == "City" & data$DataValueTypeID == "AgeAdjPrv" & data$Category == "Health Outcomes" & !(data$StateAbbr %in% c("AK","HI")),]
 mapdata$GeoLocation <- gsub("[ ()]", "", mapdata$GeoLocation)
 mapdata <- mapdata %>% separate(GeoLocation, c("lat", "long"), ",")
 mapdata$lat <- as.numeric(mapdata$lat)
 mapdata$long <- as.numeric(mapdata$long)
 USA <- map_data("state")
-
 ggplot() + geom_polygon(aes(long,lat, group=group), color='white', fill="grey65", data=USA) + geom_point(data=mapdata[mapdata$Short_Question_Text == "Arthritis",], aes(long,lat,color=Data_Value))
 ```
-shiny dashboard?
-usmap
+Through a map, we can see the locations of the cities in our study. The maps reveal regional differences in disease rate. The above map shows arthiritis rates accross the country. We have created a shiny app which allows the user to map different chronic disease rates, along with preventative measures and unhealthy behaviors.
+
 ##3.2 Comparison of large and small cities
 
 This plot visualizes the distribution of percentages of chronic disease in large and small cities, where large cities have populations greater than 100,000. 
@@ -109,13 +108,18 @@ corrplot(correlation_matrix, title = "Correlation Plot", insig = "pch", addrect 
 ```
 
 ###3.3.1 Smoking and asthma
-Look at air quality data
-Asthma risk factor American lung association
-Finding how different factors effect asthma rates in different census tracts
-Find similar projects ncbi
-```{r}
+According the ALA, cigarette smoke irritates the airways. Smokers have a high risk of asthma, as well as those who inhale the smoke secondhand. Therefore, we should expect to find that communities with higher smoking rates would also have higher asthma rates.
+
+```{r, echo=FALSE}
 tractdata <- dcast(data[data$GeographicLevel=="Census Tract" & data$DataValueTypeID=="CrdPrv",], UniqueID+CityName+StateAbbr+GeoLocation+Year+PopulationCount+GeographicLevel~Short_Question_Text, value.var="Data_Value")
 ggplot(tractdata[!is.na(tractdata$`Current Asthma`) & !is.na(tractdata$`Current Smoking`),], aes(x=`Current Smoking`,y=`Current Asthma`)) + geom_point() + geom_smooth(method='lm')
+```
+
+###3.3.2 Obesity and Asthma
+The ALA has found that though obesity is associated with asthma, it is unclear why. Some believe it is due to inflammation in the body that occur with extra weight. At the census tract level, asthma is clearly associated with obesity. 
+
+```{r, echo=FALSE}
+ggplot(tractdata[!is.na(tractdata$`Current Asthma`) & !is.na(tractdata$Obesity),], aes(x=Obesity,y=`Current Asthma`)) + geom_point() + geom_smooth(method='lm')
 ```
 
 ##3.4 Preventive Measures and Health Outcomes

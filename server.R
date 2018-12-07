@@ -4,10 +4,14 @@ source("help.R")
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output) {
-  
-  origCityData <- read.csv("C:\\Work\\DataScience\\500_Cities__Local_Data_for_Better_Health__2017_release.csv")
-  data <- subset(origCityData, select = c("UniqueID", "CityName", "CityFIPS", "StateAbbr", "GeoLocation", "Year","Measure","Data_Value","PopulationCount","GeographicLevel", "Short_Question_Text", "Category", "DataValueTypeID"))
   library(tidyr)
+  library(reshape2)
+  library(dplyr)
+  library(ggplot2)
+  
+  origCityData <- read.csv("C:\\Work\\DataScience\\500_Cities__Local_Data_for_Better_Health__2018_release.csv")
+  data <- subset(origCityData, select = c("UniqueID", "CityName", "CityFIPS", "StateAbbr", "GeoLocation", "Year","Measure","Data_Value","PopulationCount","GeographicLevel", "Short_Question_Text", "Category", "DataValueTypeID"))
+  
   mapdata <- data[data$GeographicLevel == "City" & data$DataValueTypeID == "AgeAdjPrv" & data$Category == "Health Outcomes" & !(data$StateAbbr %in% c("AK","HI")),]
   #make a temp data frame of the CityFips, Short_Question_Text, and Data Value
   tmp <- data.frame("CityFIPS" = mapdata$CityFIPS, "Short_Question_Text" = mapdata$Short_Question_Text, "Data_Value" = mapdata$Data_Value)
