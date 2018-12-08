@@ -13,3 +13,7 @@ disease_bar_plot <- function(disease, health_outcomes){
     labs(title="Rate of the disease by State", x="State", y="Percent of Population")
   print(plot)
 }
+
+scatter_plot <- function(xmeasure, ymeasure, tractdata){
+  ggplot(tractdata[!is.na(tractdata[[xmeasure]]) & !is.na(tractdata[[ymeasure]]),], aes_(x=as.name(xmeasure),y=as.name(ymeasure))) + geom_point() + geom_smooth(method='lm')
+}

@@ -1,0 +1,78 @@
+---
+title: Chronic Diseases and Their Relationship with Unhealth Behaviors and preventive
+  Measures
+author: "Ali Mohamud, Jeremy James, Ben Donavan"
+date: "December 7, 2018"
+output:
+  slidy_presentation: 
+    incremental: true
+    type: section
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Introduction
+
+What is a chronic disease? 
+
+- A chronic disease is A disease that persists for a long time [(3 months +)]
+
+- They are generally not prevented by vaccines nor go away with medication or time.
+
+- They have no cure, nor do they go away with time. 
+
+- Chronic diseases affect millions of Americans every day.
+
+***
+
+In this project, we are going to
+
+- Analyze measures of chronic diseases, including unhealthy behaviors, health outcomes, and use of preventive services of 500 major cities in the United States
+
+- Find the correlations between specific unhealthy behaviors or preventative services and chronic diseases.
+
+- Find which communities thrive or suffer from specific chronical deseases using a Map product
+
+## Description the Data
+
+- The data that we have used in this project is the'500 Cities: Local Data for Better Health' data that we obtained from the CDC's. 
+
+- This is a publicaly available data set that includes a model-based small area estimates for 27 measures of chronic disease related to unhealthy behaviors (5), heath outcomes (13) and use of preventive services (9) for 500 cities throughout the United States.
+
+- The primary aim of the data is to make it possible to identify emerging health problems and effective interventions at city level. 
+
+
+## The chronic diseases tracked in our data set.
+
+```{r}
+origCityData <- read.csv("C:\\Work\\DataScience\\500_Cities__Local_Data_for_Better_Health__2018_release.csv")
+chronicMeasures <- data.frame(condition=unique(origCityData[origCityData$Category == "Health Outcomes",]$Short_Question_Text), measure=unique(origCityData[origCityData$Category == "Health Outcomes",]$Measure))
+names(chronicMeasures) <- c("Chronic Disease", "Data Set Measures")
+
+library(pander)
+pander(chronicMeasures, caption="Conditions and description of measure")
+```
+
+## Unhealthy behaviors tracked in our data set
+
+```{r}
+behaviorMeasures <- data.frame(behavior=unique(origCityData[origCityData$Category == "Unhealthy Behaviors",]$Short_Question_Text), measure=unique(origCityData[origCityData$Category == "Unhealthy Behaviors",]$Measure))
+names(behaviorMeasures) <- c("Unhealthy Behavior", "Data Set Measures")
+
+pander(behaviorMeasures, caption="Unhealthy behaviors and description of measure")
+```
+
+## preventive services tracked in our data set
+
+```{r, echo=FALSE}
+preventionMeasures <- data.frame(prevention=unique(origCityData[origCityData$Category == "Prevention",]$Short_Question_Text), measure=unique(origCityData[origCityData$Category == "Prevention",]$Measure))
+preventionMeasures$measure <- iconv(gsub("-","-", preventionMeasures$measure), from='UTF-8', to='ASCII//TRANSLIT')
+names(preventionMeasures) <- c("Preventive Service", "Data Set Measures")
+
+pander(preventionMeasures, caption="Preventive service and description of measure")
+```
+
+
+

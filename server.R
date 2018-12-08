@@ -31,18 +31,36 @@ shinyServer(function(input, output) {
   mapdata$lat <- as.numeric(mapdata$lat)
   mapdata$long <- as.numeric(mapdata$long)
   
+  tractdata <- dcast(data[data$GeographicLevel=="Census Tract" & data$DataValueTypeID=="CrdPrv",], UniqueID+CityName+StateAbbr+GeoLocation+Year+PopulationCount+GeographicLevel~Short_Question_Text, value.var="Data_Value")
+  
   output$select <- renderUI({
-    selectInput("select", label = h3("Select disease to visualize"), 
+    selectInput("disease", label = h3("Select disease to visualize"), 
                 choices = unique(mapdata$Short_Question_Text), 
                 selected = "Arthritis")
   })
   
+  output$xmeasures <- renderUI({
+    selectInput("xmeasure", label = h3("Select a measure for the x axis"), 
+                choices = unique(origCityData$Short_Question_Text), 
+                selected = "Annual Checkup")
+  })
+  
+  output$ymeasures <- renderUI({
+    selectInput("ymeasure", label = h3("Select a measure for the y axis"), 
+                choices = unique(origCityData$Short_Question_Text), 
+                selected = "Arthritis")
+  })
+  
   output$mapPlot <- renderPlot({
-    disease_map(input$select, mapdata)
+    disease_map(input$disease, mapdata)
   })
   
   output$barPlot <- renderPlot({
-    disease_bar_plot(input$select, HealthOutcomesFinal)
+    disease_bar_plot(input$disease, HealthOutcomesFinal)
+  })
+  
+  output$scatterPlot <- renderPlot({
+    scatter_plot(input$xmeasure, input$ymeasure, tractdata)
   })
   
 })

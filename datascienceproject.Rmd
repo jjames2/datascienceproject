@@ -1,11 +1,17 @@
 ---
 title: "Chronic Diseases and Their Relationship with Unhealthy Behaviors and Preventive Measures"
 author: "Jeremy James, Ali Mohamud, and Ben Donovan"
-date: "Due on Oct 22, 2018"
+date: "Due on Dec 12, 2018"
+header-includes:
+  - \usepackage{float}
 output: pdf_document
 number_sections: TRUE
 fig_caption: yes
 ---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.pos= 'H', out.extra = '')
+```
 
 ##Abstract
 Chronic diseases affect millions of Americans every day. They have no cure, nor do they go away with time. In this project, we analyze measures of chronic diseases, including unhealthy behaviors, health outcomes, and use of preventive services of 500 major cities in the United States. Through comparing different communities based on this data, we find which communities thrive or suffer, and report what factors play a role in their respective outcomes. To visualize this information, we use map plots to show the location of healthy or unhealthy cities, and scatter plots to show correlation between different measures and chronic diseases. We do not know any specific challenges we will face, nor do we know of any correlations between specific unhealthy behaviors or preventative services and chronic diseases. Potential future research could include investigating additional data sets for weather or socioeconomic factors to find more factors that play a role in increased rates of chronic diseases.  This analysis will allow public health officials to allocate their limited resources based on the needs of each community, to better improve the well-being of the residents. 
@@ -62,7 +68,7 @@ This section is incomplete. We will be doing more exploration of this dataset as
 
 ##3.1 Mapping Chronic Disease levels
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.cap="\\label{fig:figs}Map of arthritis rates by city"}
 library(maps)
 library(tidyr)
 library(ggplot2)
@@ -91,11 +97,11 @@ fill=v11)) + geom_boxplot()+labs(x = "City", y = "Percentage of chronic diseases
   theme(legend.position="none")
 ```
 
-##3.3 Unhealthy Behaviours and Health Outcomes
+##3.3 Correlations between the measures
 
-In this section, we will explore the relationship between unhealthy behaviors and chronic diseases. 
+This matrix below shows the correlation between each pair of measures. The correlation value is the Pearson correlation coefficient. 
 
-```{r, fig.width=10, fig.height=10, fig.align='center',out.width='.99\\linewidth'}
+```{r, echo=FALSE, fig.width=10, fig.height=10, fig.align='center',out.width='.99\\linewidth'}
 library(reshape2)
 library(corrplot)
 correlation_matrix_data <- dcast(data[data$GeographicLevel=="Census Tract",], UniqueID+PopulationCount~Short_Question_Text, value.var="Data_Value")
@@ -104,31 +110,10 @@ correlation_matrix_data$UniqueID <- NULL
 correlation_matrix_data <- correlation_matrix_data[complete.cases(correlation_matrix_data),]
 correlation_matrix <- cor(correlation_matrix_data)
 correlation_matrix <- round(correlation_matrix, 2)
-corrplot(correlation_matrix, title = "Correlation Plot", insig = "pch", addrect = 3)
+corrplot(correlation_matrix, type = "upper", insig = "pch", addrect = 3)
 ```
-
-###3.3.1 Smoking and asthma
-According the ALA, cigarette smoke irritates the airways. Smokers have a high risk of asthma, as well as those who inhale the smoke secondhand. Therefore, we should expect to find that communities with higher smoking rates would also have higher asthma rates.
-
-```{r, echo=FALSE}
-tractdata <- dcast(data[data$GeographicLevel=="Census Tract" & data$DataValueTypeID=="CrdPrv",], UniqueID+CityName+StateAbbr+GeoLocation+Year+PopulationCount+GeographicLevel~Short_Question_Text, value.var="Data_Value")
-ggplot(tractdata[!is.na(tractdata$`Current Asthma`) & !is.na(tractdata$`Current Smoking`),], aes(x=`Current Smoking`,y=`Current Asthma`)) + geom_point() + geom_smooth(method='lm')
-```
-
-###3.3.2 Obesity and Asthma
-The ALA has found that though obesity is associated with asthma, it is unclear why. Some believe it is due to inflammation in the body that occur with extra weight. At the census tract level, asthma is clearly associated with obesity. 
-
-```{r, echo=FALSE}
-ggplot(tractdata[!is.na(tractdata$`Current Asthma`) & !is.na(tractdata$Obesity),], aes(x=Obesity,y=`Current Asthma`)) + geom_point() + geom_smooth(method='lm')
-```
-
-##3.4 Preventive Measures and Health Outcomes
-
-In this section, we will explore the relationship between preventive measures and chronic diseases.
 
 #4  Findings
-
-This section is still in progress. It will contain our interpretations of the data we have analyzed. 
 
 ##4.1 Comparison of large and small cities
 
@@ -138,6 +123,27 @@ pander(t.test(v1$ageadjcitydat.Data_Value~v11))
 ```
 Since the p-value is greater than significance level $\alpha=0.05$ then we no reject a null hypothsis $H_0$ and we conclude that no significance difference of the mean percentage of chronic diseases in the large and small cities.
 In the future, we will look at each chronic disease individually to see if any specific disease is correlated with population.
+
+##4.2 Asthma and its Relationship with the Other Measures
+
+###4.2.1 Smoking and asthma
+According the American Lung Association, cigarette smoke irritates the airways, inhibiting one's ability to breath. Smokers have a high risk of asthma, as well as those who inhale the smoke secondhand. Therefore, we should expect to find that communities with higher smoking rates would also have higher asthma rates.
+
+```{r, echo=FALSE, fig.cap="\\label{fig:figs}Smoking and Asthma Rates for Census Tracts"}
+tractdata <- dcast(data[data$GeographicLevel=="Census Tract" & data$DataValueTypeID=="CrdPrv",], UniqueID+CityName+StateAbbr+GeoLocation+Year+PopulationCount+GeographicLevel~Short_Question_Text, value.var="Data_Value")
+ggplot(tractdata[!is.na(tractdata$`Current Asthma`) & !is.na(tractdata$`Current Smoking`),], aes(x=`Current Smoking`,y=`Current Asthma`)) + geom_point() + geom_smooth(method='lm')
+```
+
+###4.2.2 Obesity and Asthma
+The American Lung Association has found that obesity is associated with asthma, though it is unclear why. Some believe it is due to inflammation in the body that occurs with extra weight. At the census tract level, asthma is clearly associated with obesity. 
+
+```{r, echo=FALSE, fig.cap="\\label{fig:figs}Smoking and Obesity Rates for Census Tracts"}
+ggplot(tractdata[!is.na(tractdata$`Current Asthma`) & !is.na(tractdata$Obesity),], aes(x=Obesity,y=`Current Asthma`)) + geom_point() + geom_smooth(method='lm')
+```
+
+##4.4 Preventive Measures and Health Outcomes
+
+In this section, we will explore the relationship between preventive measures and chronic diseases.
 
 #5  Conclusion
 We have no conclusions to report yet, other than that city population has little to do with city health outcomes. In our final report, this section will have more details on our findings.
