@@ -125,6 +125,7 @@ Since the p-value is greater than significance level $\alpha=0.05$ then we no re
 In the future, we will look at each chronic disease individually to see if any specific disease is correlated with population.
 
 ##4.2 Asthma and its Relationship with the Other Measures
+The American Lung Association identifies 7 risk factors that contribute to developing asthma: Family history, Viral respitory infections, Allergies, Occupational exposures, Smoking, Air Pollution, and Obesity. 2 of these, Smoking and Obesity, are tracked in our dataset. 
 
 ###4.2.1 Smoking and asthma
 According the American Lung Association, cigarette smoke irritates the airways, inhibiting one's ability to breath. Smokers have a high risk of asthma, as well as those who inhale the smoke secondhand. Therefore, we should expect to find that communities with higher smoking rates would also have higher asthma rates.
@@ -139,6 +140,13 @@ The American Lung Association has found that obesity is associated with asthma, 
 
 ```{r, echo=FALSE, fig.cap="\\label{fig:figs}Smoking and Obesity Rates for Census Tracts"}
 ggplot(tractdata[!is.na(tractdata$`Current Asthma`) & !is.na(tractdata$Obesity),], aes(x=Obesity,y=`Current Asthma`)) + geom_point() + geom_smooth(method='lm')
+```
+
+##4.3 Smoking and Mental Health
+
+The CDC has found that adults with mental illness smoke cigarettes more than adults who don't. We found this to be the case in the census tract data.
+```{r, echo=FALSE, fig.cap="\\label{fig:figs}Smoking and Obesity Rates for Census Tracts"}
+ggplot(tractdata[!is.na(tractdata$`Mental Health`) & !is.na(tractdata$`Current Smoking`),], aes(x=`Current Smoking`,y=`Mental Health`)) + geom_point() + geom_smooth(method='lm')
 ```
 
 ##4.4 Preventive Measures and Health Outcomes
