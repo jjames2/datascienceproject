@@ -46,7 +46,7 @@ preventionMeasures <- data.frame(prevention=unique(origCityData[origCityData$Cat
 preventionMeasures$measure <- iconv(gsub("-","-", preventionMeasures$measure), from='UTF-8', to='ASCII//TRANSLIT')
 names(preventionMeasures) <- c("Preventive Service", "Data Set Measures")
 
-pander(preventionMeasures, caption="Preventive service and description of measure")
+pander(preventionMeasures[1:6,], caption="Preventive service and description of measure")
 ```
 The rest of the report will discuss the '500 Cities: Local Data for Better Health' dataset. We will relate what we did to prepare the data for analyses, and display the data products we created from it. We will then make conclusions on what we found. 
 
