@@ -21,7 +21,7 @@ Chronic diseases affect millions of Americans every day. They have no cure, nor 
 Medicinenet.com gives the medical definition of chronic disease as "A disease that persists for a long time [(3 months +)]." They are generally not prevented by vaccines nor go away with medication or time[https://www.medicinenet.com/script/main/art.asp?articlekey=33490]. Table 1 displays the chronic diseases tracked in our data set. The different kinds of chronic diseases are measured by percentage of population affected on the national, city, and census track level. 
 
 ```{r, echo=FALSE}
-origCityData <- read.csv("C:\\Work\\DataScience\\500_Cities__Local_Data_for_Better_Health__2018_release.csv")
+origCityData <- readRDS("C:\\Work\\DataScience\\origCityData.rds")
 chronicMeasures <- data.frame(condition=unique(origCityData[origCityData$Category == "Health Outcomes",]$Short_Question_Text), measure=unique(origCityData[origCityData$Category == "Health Outcomes",]$Measure))
 names(chronicMeasures) <- c("Chronic Disease", "Data Set Measures")
 

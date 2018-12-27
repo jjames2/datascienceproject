@@ -1,59 +1,61 @@
 ---
-title: Chronic Diseases and Their Relationship with Unhealth Behaviors and preventive
-  Measures
-author: "Ali Mohamud, Jeremy James, Ben Donavan"
-date: "December 7, 2018"
+title: Chronic Diseases and Their Relationship with Unhealthy Behaviors and Preventative Measures
+author: "Ali Mohamud, Jeremy James, Ben Donovan"
+date: "December 12, 2018"
 output:
-  slidy_presentation: 
+  revealjs::revealjs_presentation:
+    theme: moon
     incremental: true
-    type: section
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+library(revealjs)
 ```
 
-## Introduction
+##Introduction
 
 What is a chronic disease? 
 
-- A chronic disease is A disease that persists for a long time [(3 months +)]
+- a chronic disease is a disease that persists for a long time (3 months +)
 
-- They are generally not prevented by vaccines nor go away with medication or time.
+- they are generally not prevented by vaccines nor do they go away with medication or time.
 
-- They have no cure, nor do they go away with time. 
+- they have no cure. 
 
-- Chronic diseases affect millions of Americans every day.
+- chronic diseases affect millions of Americans every day.
 
 ***
 
-In this project, we are going to
+In this project, we:
 
-- Analyze measures of chronic diseases, including unhealthy behaviors, health outcomes, and use of preventive services of 500 major cities in the United States
+- analyzed measures of chronic diseases, including unhealthy behaviors, health outcomes, and use of preventive services of 500 major cities in the United States
 
-- Find the correlations between specific unhealthy behaviors or preventative services and chronic diseases.
+- found the correlations between specific unhealthy behaviors or preventative services and chronic diseases.
 
-- Find which communities thrive or suffer from specific chronical deseases using a Map product
+- identified which communities thrive or suffer from specific chronical deseases using a map product
 
-## Description the Data
+## Description of the Data
 
-- The data that we have used in this project is the'500 Cities: Local Data for Better Health' data that we obtained from the CDC's. 
+- the data that we used in this project is the'500 Cities: Local Data for Better Health' that we obtained from the CDC's
 
-- This is a publicaly available data set that includes a model-based small area estimates for 27 measures of chronic disease related to unhealthy behaviors (5), heath outcomes (13) and use of preventive services (9) for 500 cities throughout the United States.
+- this is a publicaly available data set that includes a model-based small area estimates for 27 measures of chronic disease related to unhealthy behaviors (5), heath outcomes (13) and use of preventive services (9) for 500 cities throughout the United States
 
-- The primary aim of the data is to make it possible to identify emerging health problems and effective interventions at city level. 
+- the primary aim of the data is to make it possible to identify emerging health problems and effective interventions at city level
 
 
 ## The chronic diseases tracked in our data set.
 
-```{r}
-origCityData <- read.csv("C:\\Work\\DataScience\\500_Cities__Local_Data_for_Better_Health__2018_release.csv")
+```{r, echo=FALSE}
+origCityData <- readRDS("C:\\Work\\DataScience\\origCityData.rds")
 chronicMeasures <- data.frame(condition=unique(origCityData[origCityData$Category == "Health Outcomes",]$Short_Question_Text), measure=unique(origCityData[origCityData$Category == "Health Outcomes",]$Measure))
 names(chronicMeasures) <- c("Chronic Disease", "Data Set Measures")
 
 library(pander)
-pander(chronicMeasures, caption="Conditions and description of measure")
+panderOptions('table.alignment.default','left')
+pander(head(chronicMeasures), caption="Conditions and description of measure")
 ```
+
 
 ## Unhealthy behaviors tracked in our data set
 
@@ -71,8 +73,201 @@ preventionMeasures <- data.frame(prevention=unique(origCityData[origCityData$Cat
 preventionMeasures$measure <- iconv(gsub("-","-", preventionMeasures$measure), from='UTF-8', to='ASCII//TRANSLIT')
 names(preventionMeasures) <- c("Preventive Service", "Data Set Measures")
 
-pander(preventionMeasures, caption="Preventive service and description of measure")
+pander(head(preventionMeasures), caption="Preventive service and description of measure")
+```
+
+## Data preparation
+
+- rearranged the data to allow us to create graphs and provide better analysis
+
+- created three different data frames for health outcomes, prevention and unhealthy behavior
+
+- to account for missing entries, we used the mice package to impute data
+
+
+## Data Exploration
+
+We Created: 
+
+- a shiny dashboard to easily map chronic diseases and generate useful scatter plots
+
+- a correlation matrix to find the relationship between preventative measures and chronic diseases
+
+*** 
+This is a map plot that shows arthritis rates accross the country.
+
+```{r, message = FALSE, warning = FALSE, echo=FALSE}
+library(maps)
+library(tidyr)
+library(ggplot2)
+data <- subset(origCityData, select = c("UniqueID", "CityName","StateAbbr", "GeoLocation", "Year","Measure","Data_Value","PopulationCount","GeographicLevel", "Short_Question_Text", "Category", "DataValueTypeID"))
+mapdata <- data[data$GeographicLevel == "City" & data$DataValueTypeID == "AgeAdjPrv" & data$Category == "Health Outcomes" & !(data$StateAbbr %in% c("AK","HI")),]
+mapdata$GeoLocation <- gsub("[ ()]", "", mapdata$GeoLocation)
+mapdata <- mapdata %>% separate(GeoLocation, c("lat", "long"), ",")
+mapdata$lat <- as.numeric(mapdata$lat)
+mapdata$long <- as.numeric(mapdata$long)
+USA <- map_data("state")
+ggplot() + geom_polygon(aes(long,lat, group=group), color='white', fill="grey65", data=USA) + geom_point(data=mapdata[mapdata$Short_Question_Text == "Arthritis",], aes(long,lat,color=Data_Value)) + labs(color="Rate")
+```
+
+***
+
+- to find the relationship between measures, We constructed a graphical correlation matrix
+
+- this matrix below shows the correlation between each pair of measures 
+- the correlation value is the Pearson correlation coefficient 
+
+***
+
+```{r, fig.width=10, fig.height=10, fig.align='center', message = FALSE, warning = FALSE, echo=FALSE}
+library(reshape2)
+library(corrplot)
+correlation_matrix_data <- dcast(data[data$GeographicLevel=="Census Tract",], UniqueID+PopulationCount~Short_Question_Text, value.var="Data_Value")
+row.names(correlation_matrix_data) <- correlation_matrix_data$UniqueID
+correlation_matrix_data$UniqueID <- NULL
+correlation_matrix_data <- correlation_matrix_data[complete.cases(correlation_matrix_data),]
+correlation_matrix <- cor(correlation_matrix_data)
+correlation_matrix <- round(correlation_matrix, 2)
+corrplot(correlation_matrix, type = "upper", insig = "pch", addrect = 3)
+```
+
+## Data Products 
+
+In this project we made, three data products using the shiny package.
+
+1. a map generator to show the location of healthy or unhealthy cities, which reveals regional differences in disease rates
+
+2. two scatter plot generators to show the user:
+
+    - the correlation between different measures 
+
+    - the rate of the chronic diseases by state
+
+***
+
+- the following is link to the Shiny App: https://jeremyjames.shinyapps.io/cdc500citiesshinyapp/
+
+- all three data products were generated in order to effectively analyze measures of chronic diseases, including unhealthy behaviors, health outcomes, and use of preventative services of 500 major cities in the United States
+
+## Findings
+
+Population has little to no impact on overal chronic disease rates. 
+
+```{r, fig.height=3, fig.width=4, echo=FALSE}
+data <- subset(origCityData, select = c("UniqueID", "CityName","StateAbbr", "GeoLocation", "Year","Measure","Data_Value","PopulationCount","GeographicLevel", "Short_Question_Text", "Category", "DataValueTypeID"))
+ageadjcitydat <- data[data$GeographicLevel=="City" & data$DataValueTypeID=="AgeAdjPrv",]
+v1=na.omit(data.frame(ageadjcitydat$Data_Value,ageadjcitydat$PopulationCount))
+
+# Separation of cities into two groups - large and small
+v11=ifelse(v1$ageadjcitydat.PopulationCount>100000,"Large","Small")
+library(ggplot2)
+ggplot(v1, aes(x=v11, y=v1$ageadjcitydat.Data_Value,
+fill=v11)) + geom_boxplot()+labs(x = "City", y = "Percentage of chronic diseases")+
+  theme(legend.position="none")
+```
+
+***
+Cancer and Colorectal Cancer Screening. 
+
+- according to CDC, about 90% of new cases of colerectal cancer occurs in people who are 50 years or older.
+
+- colorectal Cancer Screening test is used to look for the disease when a person doesn't have symptoms.
+
+- screening tests can be used find precancerous polyps, so that they can be removed before they turn into cancer making it the key to preventing colorectal cancer.
+("Colorectal (Colon) Cancer")
+
+***
+This scatter plot shows the relationship between cancer and Colorectal Cancer Screening. 
+
+```{r, echo=FALSE}
+library(hexbin)
+tractdata <- dcast(data[data$GeographicLevel=="Census Tract" & data$DataValueTypeID=="CrdPrv",], UniqueID+CityName+StateAbbr+GeoLocation+PopulationCount+GeographicLevel~Short_Question_Text, value.var="Data_Value")
+
+ggplot(tractdata[!is.na(tractdata$`Cancer (except skin)`) & !is.na(tractdata$`Colorectal Cancer Screening`),], aes(x=`Colorectal Cancer Screening`,y=`Cancer (except skin)`)) + geom_hex() + geom_smooth(method='lm')
+```
+
+***
+Smoking and asthma:
+ 
+- the American Lung Association identifies smoking as a risk factor for developing asthma
+
+- cigarette smoke irritates the airways, inhibiting one's ability to breath
+
+- those who inhale the smoke either firsthand or secondhand are at risk ("Asthma Risk Factors")
+
+***
+This scatter plot shows the relationship between smoking and asthma
+
+```{r, echo=FALSE}
+library(hexbin)
+tractdata <- dcast(data[data$GeographicLevel=="Census Tract" & data$DataValueTypeID=="CrdPrv",], UniqueID+CityName+StateAbbr+GeoLocation+PopulationCount+GeographicLevel~Short_Question_Text, value.var="Data_Value")
+#tractdata <- tractdata[tractdata$`Annual Checkup` < 70,]
+ggplot(tractdata[!is.na(tractdata$`Current Asthma`) & !is.na(tractdata$`Current Smoking`),], aes(x=`Current Smoking`,y=`Current Asthma`)) + geom_hex() + geom_smooth(method='lm')
+```
+
+***
+Obesity and Asthma:
+
+- the American Lung Association identifies smoking as a risk factor for developing asthma 
+
+- unclear why. Some believe it is due to inflammation in the body that occurs with extra weight ("Asthma Risk Factors") 
+
+***
+This scatter plot shows the relationship between obesity and asthma
+
+```{r, echo=FALSE}
+library(hexbin)
+ggplot(tractdata[!is.na(tractdata$`Current Asthma`) & !is.na(tractdata$Obesity),], aes(x=Obesity,y=`Current Asthma`)) + geom_hex() + geom_smooth(method='lm')
+```
+
+***
+Smoking and Mental Health:
+
+- the CDC has found that adults with mental illness smoke cigarettes more than adults who don't ("Tobacco Use Among Adults With Mental Illness")
+
+***
+This scatter plot shows the relationship between mental health and current smoking
+
+```{r, echo=FALSE}
+library(hexbin)
+ggplot(tractdata[!is.na(tractdata$`Mental Health`) & !is.na(tractdata$`Current Smoking`),], aes(x=`Current Smoking`,y=`Mental Health`)) + geom_hex() + geom_smooth(method='lm')
+```
+
+***
+Mental health and teeth loss
+
+- people who suffer from severe mental illness are 2.7 times more likely to lose all their teeth than the general population
+
+- this can be because of simple things like phobia and anxiety
+
+- serious mental illness, eating disorder or affective (mood) disorders
+"Kisely"
+
+***
+This scatter plot showing the relationship between mental health and teeth loss
+
+```{r, echo=FALSE}
+library(hexbin)
+ggplot(tractdata[!is.na(tractdata$`Mental Health`) & !is.na(tractdata$`Teeth Loss`),], aes(x=`Teeth Loss`,y=`Mental Health`)) + geom_hex() + geom_smooth(method='lm')
 ```
 
 
+## Challenges that we have faced
 
+- displaying the concentration of points on scatter plots 
+
+- labeling plots with LaTeX and positioning of plots
+
+- keeping our files synced so our files are cohesive
+
+## Conclusion 
+
+- city population had little to no impact on chronic disease rate
+
+- strong relationship between cancer and colorectal cancer screening
+
+- strong relationship between asthma, smoking and obesity
+
+- strong correlation between mental health and teeth loss
+
+- "domino effect"
